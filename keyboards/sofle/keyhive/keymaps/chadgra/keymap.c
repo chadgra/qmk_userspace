@@ -110,7 +110,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 [_BASE] = LAYOUT(
    KC_ESC, KC_1   , KC_2   , KC_3   , KC_4   , KC_5   ,                         KC_6    , KC_7   , KC_8   , KC_9   , KC_0   , KC_GRV ,
    KC_TAB, KC_Q   , KC_W   , KC_E   , KC_R   , KC_T   ,C(KC_RGHT),     MS_SC_L, KC_Y    , KC_U   , KC_I   , KC_O   , KC_P   , KC_BSPC,
-TT(_MOVE), KC_A   , KC_S   , KC_D   , KC_F   , KC_G   , XXXXXXX,       KC_BTN1, KC_H    , KC_J   , KC_K   , KC_L   , KC_SCLN, KC_QUOT,
+TT(_MOVE), KC_A   , KC_S   , KC_D   , KC_F   , KC_G   , XXXXXXX,       MS_BTN1, KC_H    , KC_J   , KC_K   , KC_L   , KC_SCLN, KC_QUOT,
   SC_LSPO, KC_Z   , KC_X   , KC_C   , KC_V   , KC_B   ,C(KC_LEFT),     MS_SC_R, KC_N    , KC_M   , KC_COMM, KC_DOT , KC_SLSH, SC_RSPC,
                     LMG, TD(ALCB),     LMC,TT(_LOWER), KC_ENT ,           KC_SPC ,TT(_RAISE),     RMC, TD(ARCB),     RMG
 ),
@@ -175,10 +175,10 @@ TO(_BASE), XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,                         
  */
 [_RAISE] = LAYOUT(
   _______, _______, _______, _______, _______, _______,                       _______, _______, _______, _______, _______, _______,
-  _______, XXXXXXX, XXXXXXX, KC_MS_U, C(KC_R), XXXXXXX,    MS_R,       MS_D,  XXXXXXX, KC_BTN1, XXXXXXX, KC_BTN2, _______, KC_BSPC,
-  _______, XXXXXXX, KC_WH_L, KC_WH_U, KC_WH_D, KC_WH_R, _______,    _______,  KC_MS_L, KC_MS_D, KC_MS_U, KC_MS_R, KC_DEL , KC_BSPC,
-  _______, XXXXXXX, XXXXXXX, KC_MS_D, XXXXXXX, C(KC_B),    MS_L,       MS_U,  XXXXXXX, _______, XXXXXXX, _______, XXXXXXX, _______,
-                   _______, _______, _______, _______, KC_BTN2,        KC_BTN1, _______, _______, _______, _______
+  _______, XXXXXXX, XXXXXXX,   MS_UP, C(KC_R), XXXXXXX, MS_RGHT,    MS_DOWN,  XXXXXXX, MS_BTN1, XXXXXXX, MS_BTN2, _______, KC_BSPC,
+  _______, XXXXXXX, MS_WHLL, MS_WHLU, MS_WHLD, MS_WHLR, _______,    _______,  MS_LEFT, MS_DOWN,   MS_UP, MS_RGHT, KC_DEL , KC_BSPC,
+  _______, XXXXXXX, XXXXXXX, MS_DOWN, XXXXXXX, C(KC_B), MS_LEFT,      MS_UP,  XXXXXXX, _______, XXXXXXX, _______, XXXXXXX, _______,
+                   _______, _______, _______, _______, MS_BTN2,        MS_BTN1, _______, _______, _______, _______
 )
 };
 
@@ -263,26 +263,26 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         case MOUSE_SCREEN_RIGHT:
             is_mouse_screen_right = true;
             mouse_screen_right_timer = timer_read();
-            register_code(KC_ACL1);
-            register_code(KC_MS_R);
+            register_code(MS_ACL1);
+            register_code(MS_RGHT);
             break;
         case MOUSE_SCREEN_LEFT:
             is_mouse_screen_left = true;
             mouse_screen_left_timer = timer_read();
-            register_code(KC_ACL1);
-            register_code(KC_MS_L);
+            register_code(MS_ACL1);
+            register_code(MS_LEFT);
             break;
         case MOUSE_MOVE_UP:
-            init_mouse_move(KC_MS_U, &mouse_move_up_start_timer, &mouse_move_up_repeat_timer, &is_mouse_move_up);
+            init_mouse_move(MS_U, &mouse_move_up_start_timer, &mouse_move_up_repeat_timer, &is_mouse_move_up);
             break;
         case MOUSE_MOVE_DOWN:
-            init_mouse_move(KC_MS_D, &mouse_move_down_start_timer, &mouse_move_down_repeat_timer, &is_mouse_move_down);
+            init_mouse_move(MS_D, &mouse_move_down_start_timer, &mouse_move_down_repeat_timer, &is_mouse_move_down);
             break;
         case MOUSE_MOVE_RIGHT:
-            init_mouse_move(KC_MS_R, &mouse_move_right_start_timer, &mouse_move_right_repeat_timer, &is_mouse_move_right);
+            init_mouse_move(MS_R, &mouse_move_right_start_timer, &mouse_move_right_repeat_timer, &is_mouse_move_right);
             break;
         case MOUSE_MOVE_LEFT:
-            init_mouse_move(KC_MS_L, &mouse_move_left_start_timer, &mouse_move_left_repeat_timer, &is_mouse_move_left);
+            init_mouse_move(MS_L, &mouse_move_left_start_timer, &mouse_move_left_repeat_timer, &is_mouse_move_left);
             break;
         case MOD_SKIP_WORD:
             os_specific_mod(record, MOD_MASK_ALT, MOD_MASK_CTRL);
@@ -314,23 +314,23 @@ void matrix_scan_user(void) {
 
     if (is_mouse_screen_right) {
         if (timer_elapsed(mouse_screen_right_timer) > MOUSE_SCREEN_TIME) {
-            unregister_code(KC_MS_R);
-            unregister_code(KC_ACL1);
+            unregister_code(MS_RGHT);
+            unregister_code(MS_ACL1);
             is_mouse_screen_right = false;
         }
     }
     if (is_mouse_screen_left) {
         if (timer_elapsed(mouse_screen_left_timer) > MOUSE_SCREEN_TIME) {
-            unregister_code(KC_MS_L);
-            unregister_code(KC_ACL1);
+            unregister_code(MS_LEFT);
+            unregister_code(MS_ACL1);
             is_mouse_screen_left = false;
         }
     }
 
-    handle_mouse_move(KC_MS_U, mouse_move_up_start_timer, mouse_move_up_repeat_timer, &is_mouse_move_up);
-    handle_mouse_move(KC_MS_D, mouse_move_down_start_timer, mouse_move_down_repeat_timer, &is_mouse_move_down);
-    handle_mouse_move(KC_MS_R, mouse_move_right_start_timer, mouse_move_right_repeat_timer, &is_mouse_move_right);
-    handle_mouse_move(KC_MS_L, mouse_move_left_start_timer, mouse_move_left_repeat_timer, &is_mouse_move_left);
+    handle_mouse_move(MS_U, mouse_move_up_start_timer, mouse_move_up_repeat_timer, &is_mouse_move_up);
+    handle_mouse_move(MS_D, mouse_move_down_start_timer, mouse_move_down_repeat_timer, &is_mouse_move_down);
+    handle_mouse_move(MS_R, mouse_move_right_start_timer, mouse_move_right_repeat_timer, &is_mouse_move_right);
+    handle_mouse_move(MS_L, mouse_move_left_start_timer, mouse_move_left_repeat_timer, &is_mouse_move_left);
 }
 
 layer_state_t layer_state_set_user(layer_state_t state) {
