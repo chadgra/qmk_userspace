@@ -19,7 +19,8 @@
 
 #ifdef OLED_ENABLE
 
-extern char *os_string;
+// The string representing which OS it is detected being connected to
+static char *os_string;
 
 static void render_logo(void) {
     static const char PROGMEM qmk_logo[] = {
@@ -89,6 +90,10 @@ bool oled_task_user(void) {
         render_logo();
     }
     return false;
+}
+
+void set_os_string(char *new_os) {
+    os_string = new_os;
 }
 
 #endif

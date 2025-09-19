@@ -204,9 +204,6 @@ static bool is_mouse_move_left = false;
 static int mouse_move_left_start_timer = 0;
 static int mouse_move_left_repeat_timer = 0;
 
-// The string representing which OS it is detected being connected to
-char *os_string = "???";
-
 #define MOUSE_SCREEN_TIME       350
 #define MOUSE_MOVE_ACL2_TIME    50
 #define MOUSE_MOVE_ACL1_TIME    200
@@ -363,16 +360,16 @@ uint32_t custom_os_settings(uint32_t trigger_time, void *cb_arg) {
     switch (detected_os) {
         case OS_MACOS:
         case OS_IOS:
-            os_string = "Mac";
+            set_os_string("Mac");
             break;
         case OS_WINDOWS:
-            os_string = "Win";
+            set_os_string("Win");
             break;
         case OS_LINUX:
-            os_string = "Linux";
+            set_os_string("Linux");
             break;
         case OS_UNSURE:
-            os_string = "???";
+            set_os_string("???");
             retry_ms = 500;
             break;
     }
