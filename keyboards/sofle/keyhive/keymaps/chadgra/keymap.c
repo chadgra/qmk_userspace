@@ -20,23 +20,21 @@
 #include "oled.c"
 #include "encoder.c"
 
+#include "sm_td.h"
+
 // Base layer is the number of layers CYCLE selects from.
 #define BASE_LAYERS 2
 
 enum custom_keycodes {
     PLACEHOLDER = SAFE_RANGE,   // can always be here (4 bytes)
-    MOUSE_SCREEN_RIGHT,         // Move mouse to the right screen
-    MOUSE_SCREEN_LEFT,          // Move mouse to the left screen
-    MOUSE_MOVE_UP,
-    MOUSE_MOVE_DOWN,
-    MOUSE_MOVE_RIGHT,
-    MOUSE_MOVE_LEFT,
     MOD_SKIP_WORD,
     MOD_SKIP_PAGE,
     MOD_L_MAC_CMD,
     MOD_L_MAC_CTL,
     MOD_R_MAC_CMD,
     MOD_R_MAC_CTL,
+    CKC_LALT,
+    CKC_RALT,
 };
 
 enum custom_layers {
@@ -46,42 +44,6 @@ enum custom_layers {
     _RAISE
 };
 
-// Tap Dance keycodes
-enum td_keycodes {
-    ALCB,       // `LALT` when held, `{` when tapped.
-    ARCB,       // `RALT` when held, `}` when tapped.
-};
-
-// Define a type containing as many tapdance states as you need
-typedef enum {
-    TD_NONE,
-    TD_UNKNOWN,
-    TD_SINGLE_TAP,
-    TD_SINGLE_HOLD,
-    TD_DOUBLE_SINGLE_TAP
-} td_state_t;
-
-// Create a global instance of the tapdance state type
-static td_state_t td_state;
-
-// Declare your tapdance functions:
-
-// Function to determine the current tapdance state
-td_state_t cur_dance(tap_dance_state_t *state);
-
-// `finished` and `reset` functions for each tapdance keycode
-void alt_lcb_finished(tap_dance_state_t *state, void *user_data);
-void alt_lcb_reset(tap_dance_state_t *state, void *user_data);
-void alt_rcb_finished(tap_dance_state_t *state, void *user_data);
-void alt_rcb_reset(tap_dance_state_t *state, void *user_data);
-
-
-#define MS_SC_R     MOUSE_SCREEN_RIGHT
-#define MS_SC_L     MOUSE_SCREEN_LEFT
-#define MS_U        MOUSE_MOVE_UP
-#define MS_D        MOUSE_MOVE_DOWN
-#define MS_R        MOUSE_MOVE_RIGHT
-#define MS_L        MOUSE_MOVE_LEFT
 #define M_WORD      MOD_SKIP_WORD
 #define M_PAGE      MOD_SKIP_PAGE
 #define LMG         MOD_L_MAC_CMD
@@ -106,13 +68,12 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
  *            |      |      |      |      |/       /          \      \ |      |      |      |      |
  *            `-----------------------------------'            '------''---------------------------'
  */
-
 [_BASE] = LAYOUT(
    KC_ESC, KC_1   , KC_2   , KC_3   , KC_4   , KC_5   ,                         KC_6    , KC_7   , KC_8   , KC_9   , KC_0   , KC_GRV ,
-   KC_TAB, KC_Q   , KC_W   , KC_E   , KC_R   , KC_T   ,C(KC_RGHT),     MS_SC_L, KC_Y    , KC_U   , KC_I   , KC_O   , KC_P   , KC_BSPC,
+   KC_TAB, KC_Q   , KC_W   , KC_E   , KC_R   , KC_T   ,C(KC_RGHT),     KC_PGUP, KC_Y    , KC_U   , KC_I   , KC_O   , KC_P   , KC_BSPC,
 TT(_MOVE), KC_A   , KC_S   , KC_D   , KC_F   , KC_G   , XXXXXXX,       MS_BTN1, KC_H    , KC_J   , KC_K   , KC_L   , KC_SCLN, KC_QUOT,
-  SC_LSPO, KC_Z   , KC_X   , KC_C   , KC_V   , KC_B   ,C(KC_LEFT),     MS_SC_R, KC_N    , KC_M   , KC_COMM, KC_DOT , KC_SLSH, SC_RSPC,
-                    LMG, TD(ALCB),     LMC,TT(_LOWER), KC_ENT ,           KC_SPC ,TT(_RAISE),     RMC, TD(ARCB),     RMG
+  SC_LSPO, KC_Z   , KC_X   , KC_C   , KC_V   , KC_B   ,C(KC_LEFT),     KC_PGDN, KC_N    , KC_M   , KC_COMM, KC_DOT , KC_SLSH, SC_RSPC,
+                    LMG,CKC_LALT,     LMC,TT(_LOWER), KC_ENT ,           KC_SPC ,TT(_RAISE),     RMC,CKC_RALT,     RMG
 ),
 
 /*
@@ -138,7 +99,8 @@ TO(_BASE), XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,                         
                   _______, _______, _______, XXXXXXX, KC_LSFT,           XXXXXXX,  KC_APP, _______, _______, _______
 ),
 
-/* LOWER
+/*
+ * LOWER
  * ,-----------------------------------------.                    ,-----------------------------------------.
  * |      |  F1  |  F2  |  F3  |  F4  |  F5  |-------.  E  ,-------|  F6  |  F7  |  F8  |  F9  | F10  | F11  |
  * |------+------+------+------+------+------|       |< N >|       |------+------+------+------+------+------|
@@ -159,7 +121,9 @@ TO(_BASE), XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,                         
   _______, KC_EQL , KC_MINS, KC_PLUS, KC_LCBR, KC_RCBR, _______,       _______, KC_LBRC, KC_RBRC, KC_SCLN, KC_COLN, KC_BSLS, _______,
                   _______, _______, _______, _______, _______,           _______, _______, _______, _______, _______
 ),
-/* RAISE
+
+/*
+ * RAISE
  * ,----------------------------------------.                      ,-----------------------------------------.
  * |Cycle |      |      |      |      |      |-------.  E  ,-------|      |      |      |      |      |      |
  * |------+------+------+------+------+------|       |< N >|       |------+------+------+------+------+------|
@@ -175,58 +139,12 @@ TO(_BASE), XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,                         
  */
 [_RAISE] = LAYOUT(
   _______, _______, _______, _______, _______, _______,                       _______, _______, _______, _______, _______, _______,
-  _______, XXXXXXX, XXXXXXX,   MS_UP, C(KC_R), XXXXXXX, MS_RGHT,    MS_DOWN,  XXXXXXX, MS_BTN1, XXXXXXX, MS_BTN2, _______, KC_BSPC,
-  _______, XXXXXXX, MS_WHLL, MS_WHLU, MS_WHLD, MS_WHLR, _______,    _______,  MS_LEFT, MS_DOWN,   MS_UP, MS_RGHT, KC_DEL , KC_BSPC,
-  _______, XXXXXXX, XXXXXXX, MS_DOWN, XXXXXXX, C(KC_B), MS_LEFT,      MS_UP,  XXXXXXX, _______, XXXXXXX, _______, XXXXXXX, _______,
+  _______, XXXXXXX, XXXXXXX,   MS_UP, C(KC_R), XXXXXXX, XXXXXXX,    XXXXXXX,  XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, _______, KC_BSPC,
+  _______, XXXXXXX, MS_WHLL, MS_WHLU, MS_WHLD, MS_WHLR, _______,    _______,  XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, KC_DEL , KC_BSPC,
+  _______, XXXXXXX, XXXXXXX, MS_DOWN, XXXXXXX, C(KC_B), XXXXXXX,    XXXXXXX,  XXXXXXX, _______, XXXXXXX, _______, XXXXXXX, _______,
                    _______, _______, _______, _______, MS_BTN2,        MS_BTN1, _______, _______, _______, _______
 )
 };
-
-static bool is_mouse_screen_right = false;
-static bool is_mouse_screen_left = false;
-
-static uint16_t mouse_screen_right_timer = 0;
-static uint16_t mouse_screen_left_timer = 0;
-
-static bool is_mouse_move_up = false;
-static int mouse_move_up_start_timer = 0;
-static int mouse_move_up_repeat_timer = 0;
-
-static bool is_mouse_move_down = false;
-static int mouse_move_down_start_timer = 0;
-static int mouse_move_down_repeat_timer = 0;
-
-static bool is_mouse_move_right = false;
-static int mouse_move_right_start_timer = 0;
-static int mouse_move_right_repeat_timer = 0;
-
-static bool is_mouse_move_left = false;
-static int mouse_move_left_start_timer = 0;
-static int mouse_move_left_repeat_timer = 0;
-
-#define MOUSE_SCREEN_TIME       350
-#define MOUSE_MOVE_ACL2_TIME    50
-#define MOUSE_MOVE_ACL1_TIME    200
-#define MOUSE_MOVE_ACL0_TIME    500
-
-void init_mouse_move(uint16_t keycode, int* start_timer, int *repeat_timer, bool *is_move) {
-    if (!*is_move) {
-        *is_move = true;
-        *start_timer = timer_read();
-        // register_code(KC_ACL0);
-        register_code(keycode);
-    }
-    *repeat_timer = timer_read();
-}
-
-void handle_mouse_move(uint16_t keycode, int start_timer, int repeat_timer, bool *is_move) {
-    if (*is_move) {
-        if (timer_elapsed(repeat_timer) > 200) {
-            *is_move = false;
-            unregister_code(keycode);
-        }
-    }
-}
 
 void os_specific_mod(keyrecord_t *record, uint8_t mac_mod, uint8_t win_mod) {
     uint8_t mod = win_mod;
@@ -256,31 +174,11 @@ void os_specific_sc(keyrecord_t *record, uint16_t mac_code, uint16_t win_code) {
 
 // Custom keycode handling.
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+    if (!process_smtd(keycode, record)) {
+        return false;
+    }
+
     switch (keycode) {
-        case MOUSE_SCREEN_RIGHT:
-            is_mouse_screen_right = true;
-            mouse_screen_right_timer = timer_read();
-            register_code(MS_ACL1);
-            register_code(MS_RGHT);
-            break;
-        case MOUSE_SCREEN_LEFT:
-            is_mouse_screen_left = true;
-            mouse_screen_left_timer = timer_read();
-            register_code(MS_ACL1);
-            register_code(MS_LEFT);
-            break;
-        case MOUSE_MOVE_UP:
-            init_mouse_move(MS_U, &mouse_move_up_start_timer, &mouse_move_up_repeat_timer, &is_mouse_move_up);
-            break;
-        case MOUSE_MOVE_DOWN:
-            init_mouse_move(MS_D, &mouse_move_down_start_timer, &mouse_move_down_repeat_timer, &is_mouse_move_down);
-            break;
-        case MOUSE_MOVE_RIGHT:
-            init_mouse_move(MS_R, &mouse_move_right_start_timer, &mouse_move_right_repeat_timer, &is_mouse_move_right);
-            break;
-        case MOUSE_MOVE_LEFT:
-            init_mouse_move(MS_L, &mouse_move_left_start_timer, &mouse_move_left_repeat_timer, &is_mouse_move_left);
-            break;
         case MOD_SKIP_WORD:
             os_specific_mod(record, MOD_MASK_ALT, MOD_MASK_CTRL);
             break;
@@ -308,26 +206,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
 void matrix_scan_user(void) {
     encoder_action_unregister();
-
-    if (is_mouse_screen_right) {
-        if (timer_elapsed(mouse_screen_right_timer) > MOUSE_SCREEN_TIME) {
-            unregister_code(MS_RGHT);
-            unregister_code(MS_ACL1);
-            is_mouse_screen_right = false;
-        }
-    }
-    if (is_mouse_screen_left) {
-        if (timer_elapsed(mouse_screen_left_timer) > MOUSE_SCREEN_TIME) {
-            unregister_code(MS_LEFT);
-            unregister_code(MS_ACL1);
-            is_mouse_screen_left = false;
-        }
-    }
-
-    handle_mouse_move(MS_U, mouse_move_up_start_timer, mouse_move_up_repeat_timer, &is_mouse_move_up);
-    handle_mouse_move(MS_D, mouse_move_down_start_timer, mouse_move_down_repeat_timer, &is_mouse_move_down);
-    handle_mouse_move(MS_R, mouse_move_right_start_timer, mouse_move_right_repeat_timer, &is_mouse_move_right);
-    handle_mouse_move(MS_L, mouse_move_left_start_timer, mouse_move_left_repeat_timer, &is_mouse_move_left);
 }
 
 layer_state_t layer_state_set_user(layer_state_t state) {
@@ -382,78 +260,24 @@ void keyboard_post_init_user(void) {
     defer_exec(500, custom_os_settings, NULL);
 }
 
-// Determine the tapdance state to return
-td_state_t cur_dance(tap_dance_state_t *state) {
-    if (state->count == 1) {
-        if (state->interrupted || !state->pressed) {
-            return TD_SINGLE_TAP;
-        } else {
-            return TD_SINGLE_HOLD;
-        }
+smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap_count) {
+    switch (keycode) {
+        SMTD_MT(KC_Z, KC_LSFT)
+        SMTD_MT(KC_X, KC_LCMD)
+        SMTD_MT(KC_C, KC_LALT)
+        SMTD_MT(KC_V, KC_LCTL)
+        SMTD_MT(KC_B, KC_LCTL)
+
+        SMTD_MT(KC_SLSH, KC_LSFT)
+        SMTD_MT(KC_DOT, KC_LCMD)
+        SMTD_MT(KC_COMM, KC_LALT)
+        SMTD_MT(KC_M, KC_LCTL)
+        SMTD_MT(KC_N, KC_LCTL)
+
+        SMTD_MT_ON_MKEY(CKC_LALT, S(KC_LBRC), KC_LALT)
+        SMTD_MT_ON_MKEY(CKC_RALT, S(KC_RBRC), KC_RALT)
     }
 
-    if (state->count == 2) {
-        return TD_DOUBLE_SINGLE_TAP;
-    } else {
-        return TD_UNKNOWN; // Any number higher than the maximum state value you return above
-    }
+    return SMTD_RESOLUTION_UNHANDLED;
 }
 
-// Handle the possible states for each tapdance keycode you define:
-
-void tap_dance_finished(tap_dance_state_t *state, void *user_data, uint16_t tap, uint16_t hold) {
-    td_state = cur_dance(state);
-    switch (td_state) {
-        case TD_SINGLE_TAP:
-            register_code16(tap);
-            break;
-        case TD_SINGLE_HOLD:
-            register_mods(hold);
-            break;
-        case TD_DOUBLE_SINGLE_TAP: // Allow nesting of 2 taps
-            tap_code16(tap);
-            register_code16(tap);
-            break;
-        default:
-            break;
-    }
-}
-
-void tap_dance_reset(tap_dance_state_t *state, void *user_data, uint16_t tap, uint16_t hold) {
-    switch (td_state) {
-        case TD_SINGLE_TAP:
-            unregister_code16(tap);
-            break;
-        case TD_SINGLE_HOLD:
-            unregister_mods(hold); // For a layer-tap key, use `layer_off(_MY_LAYER)` here
-            break;
-        case TD_DOUBLE_SINGLE_TAP:
-            unregister_code16(tap);
-            break;
-        default:
-            break;
-    }
-}
-
-
-void alt_lcb_finished(tap_dance_state_t *state, void *user_data) {
-    tap_dance_finished(state, user_data, KC_LCBR, MOD_BIT(KC_LALT));
-}
-
-void alt_lcb_reset(tap_dance_state_t *state, void *user_data) {
-    tap_dance_reset(state, user_data, KC_LCBR, MOD_BIT(KC_LALT));
-}
-
-void alt_rcb_finished(tap_dance_state_t *state, void *user_data) {
-    tap_dance_finished(state, user_data, KC_RCBR, MOD_BIT(KC_RALT));
-}
-
-void alt_rcb_reset(tap_dance_state_t *state, void *user_data) {
-    tap_dance_reset(state, user_data, KC_RCBR, MOD_BIT(KC_RALT));
-}
-
-// Define `ACTION_TAP_DANCE_FN_ADVANCED()` for each tapdance keycode, passing in `finished` and `reset` functions
-tap_dance_action_t tap_dance_actions[] = {
-    [ALCB] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, alt_lcb_finished, alt_lcb_reset),
-    [ARCB] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, alt_rcb_finished, alt_rcb_reset)
-};

@@ -43,21 +43,11 @@ for more options.
 */
 #endif
 
-// #define MK_3_SPEED
-// #define MK_MOMENTARY_ACCEL
-#define MK_KINETIC_SPEED
-// #define MK_COMBINED
-#define MOUSEKEY_DELAY          16
-#define MOUSEKEY_INTERVAL       50
-#define MOUSEKEY_MOVE_DELTA     8
-
 // Disabled to save space
 #define NO_ACTION_ONESHOT  // 332
 #define NO_ACTION_MACRO    // 0
 #define NO_ACTION_FUNCTION // 0
 #define DISABLE_LEADER     // 0
-
-#define TAPPING_TOGGLE     2
 
 // Enable Caps word when both left and right shift keys are pressed
 #define BOTH_SHIFTS_TURNS_ON_CAPS_WORD
@@ -71,3 +61,5 @@ for more options.
 #define RCPC_KEYS KC_RIGHT_CTRL, KC_TRNS, KC_RBRC
 #define LAPO_KEYS KC_LEFT_GUI, KC_TRNS, KC_LBRC
 #define RAPC_KEYS KC_RIGHT_GUI, KC_TRNS, KC_RBRC
+
+#define MAX_DEFERRED_EXECUTORS 10
