@@ -27,14 +27,12 @@
 
 enum custom_keycodes {
     PLACEHOLDER = SAFE_RANGE,   // can always be here (4 bytes)
-    MOD_SKIP_WORD,
-    MOD_SKIP_PAGE,
-    MOD_L_MAC_CMD,
-    MOD_L_MAC_CTL,
-    MOD_R_MAC_CMD,
-    MOD_R_MAC_CTL,
+    CKM_LGUI,
+    CKM_RGUI,
     CKC_LALT,
     CKC_RALT,
+    CKM_LCTL,
+    CKM_RCTL,
 };
 
 enum custom_layers {
@@ -43,13 +41,6 @@ enum custom_layers {
     _LOWER,
     _RAISE
 };
-
-#define M_WORD      MOD_SKIP_WORD
-#define M_PAGE      MOD_SKIP_PAGE
-#define LMG         MOD_L_MAC_CMD
-#define LMC         MOD_L_MAC_CTL
-#define RMG         MOD_R_MAC_CMD
-#define RMC         MOD_R_MAC_CTL
 
 //Default keymap. This can be changed in Via. Use oled.c to change beavior that Via cannot change.
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
@@ -73,7 +64,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
    KC_TAB, KC_Q   , KC_W   , KC_E   , KC_R   , KC_T   ,C(KC_RGHT),     KC_PGUP, KC_Y    , KC_U   , KC_I   , KC_O   , KC_P   , KC_BSPC,
 TT(_MOVE), KC_A   , KC_S   , KC_D   , KC_F   , KC_G   , XXXXXXX,       MS_BTN1, KC_H    , KC_J   , KC_K   , KC_L   , KC_SCLN, KC_QUOT,
   SC_LSPO, KC_Z   , KC_X   , KC_C   , KC_V   , KC_B   ,C(KC_LEFT),     KC_PGDN, KC_N    , KC_M   , KC_COMM, KC_DOT , KC_SLSH, SC_RSPC,
-                    LMG,CKC_LALT,     LMC,TT(_LOWER), KC_ENT ,           KC_SPC ,TT(_RAISE),     RMC,CKC_RALT,     RMG
+               CKM_LGUI,CKC_LALT,CKM_LCTL,TT(_LOWER), KC_ENT ,           KC_SPC ,TT(_RAISE),CKM_RCTL,CKC_RALT,CKM_RGUI
 ),
 
 /*
@@ -92,9 +83,9 @@ TT(_MOVE), KC_A   , KC_S   , KC_D   , KC_F   , KC_G   , XXXXXXX,       MS_BTN1, 
  *            `-----------------------------------'            '------''---------------------------'
  */
 [_MOVE] = LAYOUT(
-TO(_BASE), XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,                         XXXXXXX, XXXXXXX, KC_PGUP, XXXXXXX, KC_HOME, XXXXXXX,
+TO(_BASE), XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,                         XXXXXXX, XXXXXXX, KC_PGUP, XXXXXXX,G(KC_LEFT), XXXXXXX,
   XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, KC_PGUP,       KC_VOLD, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, KC_BSPC,
-  _______, KC_LGUI,  M_PAGE,  M_WORD, KC_CAPS, XXXXXXX,   KC_NO,       KC_MPLY, KC_LEFT, KC_DOWN, KC_UP  , KC_RGHT, XXXXXXX, KC_END ,
+  _______, KC_LGUI, KC_LCTL, KC_LALT, KC_CAPS, XXXXXXX,   KC_NO,       KC_MPLY, KC_LEFT, KC_DOWN, KC_UP  , KC_RGHT, XXXXXXX,G(KC_RGHT),
   _______, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, KC_PGDN,       KC_VOLU, XXXXXXX, XXXXXXX, KC_PGDN, XXXXXXX, XXXXXXX, _______,
                   _______, _______, _______, XXXXXXX, KC_LSFT,           XXXXXXX,  KC_APP, _______, _______, _______
 ),
@@ -146,58 +137,10 @@ TO(_BASE), XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,                         
 )
 };
 
-void os_specific_mod(keyrecord_t *record, uint8_t mac_mod, uint8_t win_mod) {
-    uint8_t mod = win_mod;
-    os_variant_t detected_os = detected_host_os();
-
-    if ((detected_os == OS_MACOS) || (detected_os == OS_IOS)) {
-        mod = mac_mod;
-    }
-
-    if (record->event.pressed) {
-        register_mods(mod);
-    } else {
-        unregister_mods(mod);
-    }
-}
-
-void os_specific_sc(keyrecord_t *record, uint16_t mac_code, uint16_t win_code) {
-    uint16_t code = win_code;
-    os_variant_t detected_os = detected_host_os();
-
-    if ((detected_os == OS_MACOS) || (detected_os == OS_IOS)) {
-        code = mac_code;
-    }
-
-    process_space_cadet(code, record);
-}
-
 // Custom keycode handling.
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     if (!process_smtd(keycode, record)) {
         return false;
-    }
-
-    switch (keycode) {
-        case MOD_SKIP_WORD:
-            os_specific_mod(record, MOD_MASK_ALT, MOD_MASK_CTRL);
-            break;
-        case MOD_SKIP_PAGE:
-            os_specific_mod(record, MOD_MASK_CTRL, MOD_MASK_GUI);
-            break;
-        case MOD_L_MAC_CMD:
-            os_specific_mod(record, MOD_BIT(KC_LGUI), MOD_BIT(KC_LCTL));
-            break;
-        case MOD_L_MAC_CTL:
-            os_specific_sc(record, SC_LCPO, SC_LAPO);
-            break;
-        case MOD_R_MAC_CMD:
-            os_specific_mod(record, MOD_BIT(KC_RGUI), MOD_BIT(KC_RCTL));
-            break;
-        case MOD_R_MAC_CTL:
-            os_specific_sc(record, SC_RCPC, SC_RAPC);
-            break;
-
     }
 
     // this uses less memory than returning in each case.
@@ -276,6 +219,12 @@ smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap
 
         SMTD_MT_ON_MKEY(CKC_LALT, S(KC_LBRC), KC_LALT)
         SMTD_MT_ON_MKEY(CKC_RALT, S(KC_RBRC), KC_RALT)
+
+        SMTD_MT_ON_MKEY(CKM_LGUI, S(KC_COMM), KC_LGUI)
+        SMTD_MT_ON_MKEY(CKM_RGUI, S(KC_DOT), KC_RGUI)
+
+        SMTD_MT_ON_MKEY(CKM_LCTL, KC_LBRC, KC_LCTL)
+        SMTD_MT_ON_MKEY(CKM_RCTL, KC_RBRC, KC_RCTL)
     }
 
     return SMTD_RESOLUTION_UNHANDLED;
