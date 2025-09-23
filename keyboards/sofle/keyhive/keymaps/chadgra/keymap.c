@@ -27,17 +27,31 @@
 
 enum custom_keycodes {
     PLACEHOLDER = SAFE_RANGE,   // can always be here (4 bytes)
-    CKM_LGUI,
-    CKM_RGUI,
+
+    // Custom keys used on both Mac and Windows
     CKC_LALT,
     CKC_RALT,
+
+    // Custom keys used on Mac
+    CKM_MOVE,
+    CKM_LGUI,
+    CKM_RGUI,
     CKM_LCTL,
     CKM_RCTL,
+
+    // Custom keys used on Windows
+    CKW_MOVE,
+    CKW_LCTL,
+    CKW_RCTL,
+    CKW_LWIN,
+    CKW_RWIN,
 };
 
 enum custom_layers {
     _BASE,
+    _BASE_W,
     _MOVE,
+    _MOVE_W,
     _LOWER,
     _RAISE
 };
@@ -45,7 +59,7 @@ enum custom_layers {
 //Default keymap. This can be changed in Via. Use oled.c to change beavior that Via cannot change.
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 /*
- * BASE
+ * _BASE and _BASE_W
  * ,-----------------------------------------.                    ,-----------------------------------------.
  * | ESC  |   1  |   2  |   3  |   4  |   5  |-------.  E  ,-------|   6  |   7  |   8  |   9  |   0  |  `   |
  * |------+------+------+------+------+------|C+Right|< N >|SCRN_LT|------+------+------+------+------+------|
@@ -62,13 +76,21 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 [_BASE] = LAYOUT(
    KC_ESC, KC_1   , KC_2   , KC_3   , KC_4   , KC_5   ,                         KC_6    , KC_7   , KC_8   , KC_9   , KC_0   , KC_GRV ,
    KC_TAB, KC_Q   , KC_W   , KC_E   , KC_R   , KC_T   ,C(KC_RGHT),     KC_PGUP, KC_Y    , KC_U   , KC_I   , KC_O   , KC_P   , KC_BSPC,
-TT(_MOVE), KC_A   , KC_S   , KC_D   , KC_F   , KC_G   , XXXXXXX,       MS_BTN1, KC_H    , KC_J   , KC_K   , KC_L   , KC_SCLN, KC_QUOT,
+ CKM_MOVE, KC_A   , KC_S   , KC_D   , KC_F   , KC_G   ,TG(_BASE_W),    MS_BTN1, KC_H    , KC_J   , KC_K   , KC_L   , KC_SCLN, KC_QUOT,
   SC_LSPO, KC_Z   , KC_X   , KC_C   , KC_V   , KC_B   ,C(KC_LEFT),     KC_PGDN, KC_N    , KC_M   , KC_COMM, KC_DOT , KC_SLSH, SC_RSPC,
                CKM_LGUI,CKC_LALT,CKM_LCTL,TT(_LOWER), KC_ENT ,           KC_SPC ,TT(_RAISE),CKM_RCTL,CKC_RALT,CKM_RGUI
 ),
 
+[_BASE_W] = LAYOUT(
+  _______, _______, _______, _______, _______, _______,                         _______, _______, _______, _______, _______, _______,
+  _______, _______, _______, _______, _______, _______, A(KC_TAB),     _______, _______, _______, _______, _______, _______, _______,
+ CKW_MOVE, _______, _______, _______, _______, _______, _______,       _______, _______, _______, _______, _______, _______, _______,
+  _______, KC_Z   , KC_X   , KC_C   , KC_V   , KC_B   ,A(S(KC_TAB)),   _______, KC_N   , KC_M   , KC_COMM, KC_DOT , KC_SLSH, _______,
+                  CKW_LCTL,CKC_LALT,CKW_LWIN, _______, _______,          _______, _______,CKW_RWIN,CKC_RALT,CKW_RCTL
+),
+
 /*
- * MOVE
+ * _MOVE and _MOVE_W
  * ,-----------------------------------------.                    ,-----------------------------------------.
  * | BASE |      |      |      |      |      |-------.  E  ,-------|      |      | PgUp |      | Home |      |
  * |------+------+------+------+------+------| Pg Up |< N >| VolDn |------+------+------+------+------+------|
@@ -88,6 +110,14 @@ TO(_BASE), XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,                         
   _______, KC_LGUI, KC_LCTL, KC_LALT, KC_CAPS, XXXXXXX,   KC_NO,       KC_MPLY, KC_LEFT, KC_DOWN, KC_UP  , KC_RGHT, XXXXXXX,G(KC_RGHT),
   _______, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, KC_PGDN,       KC_VOLU, XXXXXXX, XXXXXXX, KC_PGDN, XXXXXXX, XXXXXXX, _______,
                   _______, _______, _______, XXXXXXX, KC_LSFT,           XXXXXXX,  KC_APP, _______, _______, _______
+),
+
+[_MOVE_W] = LAYOUT(
+  _______, _______, _______, _______, _______, _______,                      _______, _______, _______, _______, KC_HOME, _______,
+  _______, _______, _______, _______, _______, _______, _______,    _______, _______, _______, _______, _______, _______, _______,
+  _______, _______, KC_LALT, KC_LCTL, _______, _______, _______,    _______, _______, _______, _______, _______, _______, KC_END ,
+  _______, _______, _______, _______, _______, _______, _______,    _______, _______, _______, _______, _______, _______, _______,
+                   _______, _______, _______, _______, _______,      _______, _______, _______, _______, _______
 ),
 
 /*
@@ -152,8 +182,16 @@ void matrix_scan_user(void) {
 }
 
 layer_state_t layer_state_set_user(layer_state_t state) {
-    switch(biton32(state)) {
+    // _MOVE needs to be active whenever _MOVE_W is active
+    // since it contains the first pass of keycodes for that
+    // layer. _MOVE_W only contains the modified keys.
+    if (IS_LAYER_ON_STATE(state, _MOVE_W)) {
+        state |= (1 << _MOVE);
+    }
+
+    switch(get_highest_layer(state)) {
         case _MOVE:
+        case _MOVE_W:
             rgblight_enable_noeeprom();
             rgblight_sethsv_noeeprom(HSV_GOLDENROD);
             break;
@@ -185,9 +223,11 @@ uint32_t custom_os_settings(uint32_t trigger_time, void *cb_arg) {
             break;
         case OS_WINDOWS:
             set_os_string("Win");
+            layer_on(_BASE_W);
             break;
         case OS_LINUX:
             set_os_string("Linux");
+            layer_on(_BASE_W);
             break;
         case OS_UNSURE:
             set_os_string("???");
@@ -225,6 +265,15 @@ smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap
 
         SMTD_MT_ON_MKEY(CKM_LCTL, KC_LBRC, KC_LCTL)
         SMTD_MT_ON_MKEY(CKM_RCTL, KC_RBRC, KC_RCTL)
+
+        SMTD_MT_ON_MKEY(CKW_LCTL, S(KC_COMM), KC_LCTL)
+        SMTD_MT_ON_MKEY(CKW_RCTL, S(KC_DOT), KC_RCTL)
+
+        SMTD_MT_ON_MKEY(CKW_LWIN, KC_LBRC, KC_LWIN)
+        SMTD_MT_ON_MKEY(CKW_RWIN, KC_RBRC, KC_RWIN)
+
+        SMTD_LT_ON_MKEY(CKM_MOVE, KC_ESC, _MOVE)
+        SMTD_LT_ON_MKEY(CKW_MOVE, KC_ESC, _MOVE_W)
     }
 
     return SMTD_RESOLUTION_UNHANDLED;

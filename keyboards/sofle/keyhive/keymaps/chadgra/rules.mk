@@ -1,6 +1,10 @@
 VIA_ENABLE = no
 NKRO_ENABLE = no            # USB Nkey Rollover
+CONSOLE_ENABLE = no		# Console output
+COMMAND_ENABLE = no		# Commands for debug and configuration
+MOUSEKEY_ENABLE = no	# Mouse keys
+LTO_ENABLE = yes            # Link Time Optimization
 RGBLIGHT_ENABLE = yes       # Enable keyboard RGB underglow
-CAPS_WORD_ENABLE = yes		# Caps word
-OS_DETECTION_ENABLE = yes	# OS detection
-DEFERRED_EXEC_ENABLE = yes	# Deferred execution - to help with OS detection and sm_td
+CAPS_WORD_ENABLE = yes      # Caps word
+OS_DETECTION_ENABLE = yes   # OS detection
+DEFERRED_EXEC_ENABLE = yes  # Deferred execution - to help with OS detection and sm_td

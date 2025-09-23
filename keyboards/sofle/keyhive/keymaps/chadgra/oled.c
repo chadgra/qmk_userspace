@@ -52,16 +52,22 @@ static void print_status_narrow(void) {
     // Print current layer
     oled_write_ln_P(PSTR("LAYER"), false);
     switch (get_highest_layer(layer_state)) {
-        case 0: // _QWERTY
+        case 0: // _BASE
             oled_write_ln_P(PSTR("Base"), false);
             break;
-        case 1: // _MOVE
+        case 1: // _BASE_W
+            oled_write_P(PSTR("BaseW"), false);
+            break;
+        case 2: // _MOVE
             oled_write_ln_P(PSTR("Move"), false);
             break;
-        case 2:
+        case 3: // _MOVE_W
+            oled_write_P(PSTR("MoveW"), false);
+            break;
+        case 4:
             oled_write_P(PSTR("Lower"), false);
             break;
-        case 3:
+        case 5:
             oled_write_P(PSTR("Raise"), false);
             break;
         default:
