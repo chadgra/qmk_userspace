@@ -171,19 +171,14 @@ TO(_BASE), XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,                         
 
 // Custom keycode handling.
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-    // Manually enable caps word when both shifts are pressed.
-    static bool one_shift_press = false;
-
-    if ((keycode == CKC_LSFT) || (keycode == CKC_RSFT)) {
-        if (one_shift_press) {
-            one_shift_press = false;
-            caps_word_on();
-            return false;
-            // return SMTD_RESOLUTION_UNHANDLED;
+    // Manually enable caps_word when right shift is pressed while left shift is held.
+    if (record->event.pressed) {
+        uint8_t mods = get_mods();
+        if (keycode == CKC_RSFT) {
+            if ((mods & MOD_BIT(KC_LSFT))) {
+                caps_word_on();
+            }
         }
-        one_shift_press = true;
-    } else {
-        one_shift_press = false;
     }
 
     if (!process_smtd(keycode, record)) {

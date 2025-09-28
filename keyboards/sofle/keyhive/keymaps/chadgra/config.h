@@ -53,4 +53,9 @@ for more options.
 #define OS_DETECTION_KEYBOARD_RESET
 #define OS_DETECTION_SINGLE_REPORT
 
+// Setting for sm_td
 #define MAX_DEFERRED_EXECUTORS 10
+
+// Allow for faster tapping - at the original value of 50ms some keys
+// were not getting recognized.
+#define SMTD_GLOBAL_RELEASE_TERM 40
