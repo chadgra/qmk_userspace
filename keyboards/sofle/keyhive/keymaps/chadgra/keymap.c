@@ -29,6 +29,8 @@ enum custom_keycodes {
     PLACEHOLDER = SAFE_RANGE,   // can always be here (4 bytes)
 
     // Custom keys used on both Mac and Windows
+    CKC_LSFT,
+    CKC_RSFT,
     CKC_LALT,
     CKC_RALT,
 
@@ -77,7 +79,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
    KC_ESC, KC_1   , KC_2   , KC_3   , KC_4   , KC_5   ,                         KC_6    , KC_7   , KC_8   , KC_9   , KC_0   , KC_GRV ,
    KC_TAB, KC_Q   , KC_W   , KC_E   , KC_R   , KC_T   ,C(KC_RGHT),     KC_PGUP, KC_Y    , KC_U   , KC_I   , KC_O   , KC_P   , KC_BSPC,
  CKM_MOVE, KC_A   , KC_S   , KC_D   , KC_F   , KC_G   ,TG(_BASE_W),    MS_BTN1, KC_H    , KC_J   , KC_K   , KC_L   , KC_SCLN, KC_QUOT,
-  SC_LSPO, KC_Z   , KC_X   , KC_C   , KC_V   , KC_B   ,C(KC_LEFT),     KC_PGDN, KC_N    , KC_M   , KC_COMM, KC_DOT , KC_SLSH, SC_RSPC,
+ CKC_LSFT, KC_Z   , KC_X   , KC_C   , KC_V   , KC_B   ,C(KC_LEFT),     KC_PGDN, KC_N    , KC_M   , KC_COMM, KC_DOT , KC_SLSH,CKC_RSFT,
                CKM_LGUI,CKC_LALT,CKM_LCTL,TT(_LOWER), KC_ENT ,           KC_SPC ,TT(_RAISE),CKM_RCTL,CKC_RALT,CKM_RGUI
 ),
 
@@ -139,7 +141,7 @@ TO(_BASE), XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,                         
   _______, KC_F1  , KC_F2  , KC_F3  , KC_F4  , KC_F5  ,                         KC_F6  , KC_F7  , KC_F8  , KC_F9  , KC_F10 , KC_F11 ,
   KC_GRV , KC_F11 , KC_F12 , KC_3   , KC_4   , KC_5   , _______,       _______, KC_6   , KC_7   , KC_8   , KC_MINS, KC_EQL , KC_DEL ,
   _______, KC_EXLM, KC_AT  , KC_HASH, KC_DLR , KC_PERC, _______,       _______, KC_CIRC, KC_AMPR, KC_ASTR, KC_LBRC, KC_RBRC, KC_BSLS,
-  _______, KC_EQL , KC_MINS, KC_PLUS, KC_LCBR, KC_RCBR, _______,       _______, KC_LBRC, KC_RBRC, KC_SCLN, KC_COLN, KC_BSLS, _______,
+  KC_LSFT, KC_EQL , KC_MINS, KC_PLUS, KC_LCBR, KC_RCBR, _______,       _______, KC_LBRC, KC_RBRC, KC_SCLN, KC_COLN, KC_BSLS, KC_RSFT,
                   _______, _______, _______, _______, _______,           _______, _______, _______, _______, _______
 ),
 
@@ -169,6 +171,21 @@ TO(_BASE), XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,                         
 
 // Custom keycode handling.
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+    // Manually enable caps word when both shifts are pressed.
+    static bool one_shift_press = false;
+
+    if ((keycode == CKC_LSFT) || (keycode == CKC_RSFT)) {
+        if (one_shift_press) {
+            one_shift_press = false;
+            caps_word_on();
+            return false;
+            // return SMTD_RESOLUTION_UNHANDLED;
+        }
+        one_shift_press = true;
+    } else {
+        one_shift_press = false;
+    }
+
     if (!process_smtd(keycode, record)) {
         return false;
     }
@@ -256,6 +273,9 @@ smtd_resolution on_smtd_action(uint16_t keycode, smtd_action action, uint8_t tap
         SMTD_MT(KC_COMM, KC_LALT)
         SMTD_MT(KC_M, KC_LCTL)
         SMTD_MT(KC_N, KC_LCTL)
+
+        SMTD_MT_ON_MKEY(CKC_LSFT, S(KC_9), KC_LSFT)
+        SMTD_MT_ON_MKEY(CKC_RSFT, S(KC_0), KC_RSFT)
 
         SMTD_MT_ON_MKEY(CKC_LALT, S(KC_LBRC), KC_LALT)
         SMTD_MT_ON_MKEY(CKC_RALT, S(KC_RBRC), KC_RALT)

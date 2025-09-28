@@ -49,9 +49,6 @@ for more options.
 #define NO_ACTION_FUNCTION // 0
 #define DISABLE_LEADER     // 0
 
-// Enable Caps word when both left and right shift keys are pressed
-#define BOTH_SHIFTS_TURNS_ON_CAPS_WORD
-
 // OS Detection
 #define OS_DETECTION_KEYBOARD_RESET
 #define OS_DETECTION_SINGLE_REPORT
