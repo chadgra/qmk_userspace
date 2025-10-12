@@ -58,4 +58,13 @@ for more options.
 
 // Allow for faster tapping - at the original value of 50ms some keys
 // were not getting recognized.
-#define SMTD_GLOBAL_RELEASE_TERM 40
+// They way they were missed would typically be when typing "n" or "m"
+// followed by a key with the right hand. The "n" or "m" would get
+// interpreted as a ctrl hold (because they are set to ctrl with sm_td)
+// then the next character would be some system shortcut.
+// Dropping this from 50ms (the default) to 5ms seems to avoid this issue.
+// The exception to this is the left and right shift keys that have
+// the opposite problem (get interpreted as taps and insert "(" or ")" keys).
+// Key overrides are put into the code to handle those keys.
+#define SMTD_GLOBAL_RELEASE_TERM 5
+

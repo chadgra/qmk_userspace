@@ -250,6 +250,20 @@ uint32_t custom_os_settings(uint32_t trigger_time, void *cb_arg) {
     return retry_ms;
 }
 
+// This function allows for a much longer timeout for the left and right shift keys.
+// These keys had a tendancy to register as 2 taps when trying to capitalize a letter.
+// So instead of "N" I would often get "(n". I believe this is the correct timeout
+// override to fix this.
+uint32_t get_smtd_timeout(uint16_t keycode, smtd_timeout timeout) {
+    switch (keycode) {
+        case CKC_LSFT:
+        case CKC_RSFT:
+            if (timeout == SMTD_TIMEOUT_RELEASE) return 500;
+    }
+
+    return get_smtd_timeout_default(timeout);
+}
+
 void keyboard_post_init_user(void) {
     rgblight_disable_noeeprom();
     defer_exec(500, custom_os_settings, NULL);
